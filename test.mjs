@@ -1,0 +1,13 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {projectGrowth,budgetSummary,matchCareers,validSymbol} from './dist/finance.js';
+import {careers,lessons,sources} from './dist/content.js';
+test('zero return equals total contributions',()=>{const r=projectGrowth(1000,100,10,0);assert.equal(r.balance,13000);assert.equal(r.growth,0)});
+test('effective annual rate compounds correctly',()=>assert.ok(Math.abs(projectGrowth(1000,0,2,5).balance-1102.5)<1e-7));
+test('monthly deposits happen at the end of the month',()=>{const monthlyRate=.01,annual=(1.01**12-1)*100;const expected=100*((1.01**12-1)/monthlyRate);assert.ok(Math.abs(projectGrowth(0,100,1,annual).balance-expected)<1e-7)});
+test('negative returns produce losses',()=>assert.ok(projectGrowth(1000,0,2,-10).growth<0));
+test('invalid calculator values are rejected',()=>{assert.throws(()=>projectGrowth(0,0,0,5));assert.throws(()=>projectGrowth(NaN,10,5,5));assert.throws(()=>budgetSummary(-1,0,0,0,0))});
+test('budget reports surplus and shortfall',()=>{assert.equal(budgetSummary(1800,950,250,150,200).remaining,250);assert.equal(budgetSummary(100,100,10,10,0).remaining,-20)});
+test('symbols cannot inject markup or URLs',()=>{assert.ok(validSymbol('NASDAQ:AAPL'));assert.ok(validSymbol('NYSE:BRK.B'));for(const s of ['<script>','https://example.com','AAPL','NASDAQ:AAPL"'])assert.equal(validSymbol(s),false)});
+test('career matching counts transparent interest tags',()=>{const r=matchCareers(careers,['people','conversation','planning']);assert.equal(r[0].id,'fp');assert.equal(r[0].score,3)});
+test('lessons have valid answers and existing sources',()=>{assert.equal(new Set(lessons.map(l=>l.id)).size,lessons.length);for(const l of lessons){assert.ok(l.options[l.answer]);for(const s of l.sources)assert.ok(sources[s]);assert.ok(l.body.length>=3)}});
